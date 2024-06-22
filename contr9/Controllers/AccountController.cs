@@ -8,13 +8,13 @@ namespace contr9.Controllers;
 
 public class AccountController : Controller
 {
-    private Contr9Db _db;
+    private WalletDb _db;
     private UserManager<User> _userManager;
     private SignInManager<User> _signInManager;
     private IWebHostEnvironment _environment;
 
 
-    public AccountController(Contr9Db db, UserManager<User> userManager, SignInManager<User> signInManager, IWebHostEnvironment environment)
+    public AccountController(WalletDb db, UserManager<User> userManager, SignInManager<User> signInManager, IWebHostEnvironment environment)
     {
         _db = db;
         _userManager = userManager;
@@ -47,87 +47,82 @@ public class AccountController : Controller
     
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> Edit(User model, IFormFile? uploadedFile, int userId, string? password)
+    public async Task<IActionResult> Edit(User model, int userId, string? currentPassword, string? password)
     {
-        User? user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        User? user = await _userManager.FindByIdAsync(userId.ToString());
         if (user != null)
         {
-            string? path = null;
-            if (uploadedFile!=null)
-            {
-                var buffer = user.Avatar.Split('=');
-                var buffer2 = buffer[buffer.Length - 1].Split('.');
-                string newFileName = Path.ChangeExtension($"{model.UserName.Trim()}-ProfileN={int.Parse(buffer2[0])+1}", Path.GetExtension(uploadedFile.FileName));
-                path= $"/userImages/" + newFileName.Trim();
-                using (var fileStream = new FileStream(_environment.WebRootPath + path, FileMode.Create))
-                {
-                    await uploadedFile.CopyToAsync(fileStream);
-                }
-            }
             user.Email = model.Email;
             user.UserName = model.UserName;
             user.PhoneNumber = model.PhoneNumber;
-            user.PasswordHash = password != null ? _userManager.PasswordHasher.HashPassword(user, password) : user.PasswordHash;
-            user.Avatar = path != null ? path : user.Avatar;
-            _db.Users.Update(user);
-            int n = await _db.SaveChangesAsync();
-            if (n>0)
-                return new ObjectResult(user);
-            else
-                return BadRequest();
+            if (password != null && currentPassword != null)
+            {
+                var result = await _userManager.ChangePasswordAsync(user, currentPassword, password);
+                if (!result.Succeeded)
+                {
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                    return NotFound();
+                }
+            }
+            await _signInManager.RefreshSignInAsync(user);
+            await _userManager.UpdateAsync(user);
+            return new ObjectResult(user);
         }
         ModelState.AddModelError("","Пользователь не найден");
         return NotFound();
     }
     
+    [HttpGet]
     public async Task<IActionResult> Register()
     {
         User? currentUser = await _userManager.GetUserAsync(User);
         bool isAdmin = false;
         if (currentUser != null)
             isAdmin = await _userManager.IsInRoleAsync(currentUser, "admin");
-        if (isAdmin)
-        {
-            ViewData["FormName"] = "Создание нового пользователя";
-            ViewData["ButtonName"] = "Создать";
-            ViewBag.IsAdmin = isAdmin;
-        }
-        else
+        if (currentUser == null || !isAdmin)
         {
             ViewData["FormName"] = "Регистрация";
             ViewData["ButtonName"] = "Зарегистрироваться";
-            ViewBag.IsAdmin = isAdmin;
+            ViewBag.IsAdmin = false;
+        }
+        else
+        {
+            ViewData["FormName"] = "Создание нового пользователя";
+            ViewData["ButtonName"] = "Создать";
+            ViewBag.IsAdmin = true;
         }
         return View();
     }
 
     [HttpPost]
-    public async Task<IActionResult> Register(RegisterViewModel model, IFormFile? uploadedFile)
+    public async Task<IActionResult> Register(RegisterViewModel model)
     {
+       
+        Random random = new Random();
+        bool isAdmin = false;
+        int uniqueNumber;
+        do
+        {
+            uniqueNumber = random.Next(100000, 1000000); 
+        } while (_db.Users.Any(u => u.Account.Equals(uniqueNumber.ToString())));
         if (ModelState.IsValid)
         {
-            string path = "/userImages/defProf-ProfileN=1.png";
-            if (uploadedFile != null)
-            {
-                string newFileName = Path.ChangeExtension($"{model.UserName.Trim()}-ProfileN=1", Path.GetExtension(uploadedFile.FileName));
-                path= $"/userImages/" + newFileName.Trim();
-                using (var fileStream = new FileStream(_environment.WebRootPath + path, FileMode.Create))
-                {
-                    await uploadedFile.CopyToAsync(fileStream);
-                }
-            }
             User user = new User
             {
                 Email = model.Email,
                 UserName = model.UserName,
+                Account = uniqueNumber.ToString(),
+                Balance = 100000,
                 PhoneNumber = model.PhoneNumber,
-                Avatar = path,
             };
             var result = await _userManager.CreateAsync(user, model.Password);
             if (result.Succeeded)
             {
                 User? currentUser = await _userManager.GetUserAsync(User);
-                bool isAdmin = false;
+                
                 if (currentUser != null)
                     isAdmin = await _userManager.IsInRoleAsync(currentUser, "admin");
                 if (isAdmin)
@@ -146,6 +141,7 @@ public class AccountController : Controller
                 ModelState.AddModelError(string.Empty, error.Description);
         }
         ModelState.AddModelError("", "Something went wrong! Please check all info");
+        ViewBag.IsAdmin = isAdmin;
         return View(model);
     }
 
@@ -162,7 +158,7 @@ public class AccountController : Controller
         {
             User? user = await _userManager.FindByEmailAsync(model.LoginValue);
             if (user == null)
-                user = await _userManager.FindByNameAsync(model.LoginValue);
+                user = await _db.Users.FirstOrDefaultAsync(u => u.Account.Equals(model.LoginValue));
             if (user != null)
             {
                 var result = await _signInManager.PasswordSignInAsync(

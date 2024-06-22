@@ -6,9 +6,6 @@
 }
 
 <div class="row g-0 pt-5" id="profile">
-    <div class="col-md-4 pb-5 text-center border-bottom">
-        <img src="@Model.Avatar" id="profileAvatar" width="200" height="200" class="rounded-circle mx-auto ">
-    </div>
     <div class="col-md-8 border-bottom">
         <div class="card-body">
             <div class="row">
@@ -30,6 +27,7 @@
                 }
                 <div class="col col-12 mt-4">UserName: &nbsp;<h5 id="profileUserName">@Model.UserName</h5></div>
                 <div class="col col-12 mt-4">Phone number: &nbsp;<h5 id="profilePhone">@Model.PhoneNumber</h5></div>
+                <div class="col col-12 mt-4">Account: &nbsp;<h5 id="profileAccount">@Model.Account</h5></div>
             </div>
         </div>
     </div>
@@ -42,7 +40,7 @@
                 <h5 class="modal-title">Редактировать профиль</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form asp-action="Edit" id="editForm" asp-controller="Account" asp-anti-forgery="true"  enctype="multipart/form-data" >
+            <form asp-action="Edit" id="editForm" asp-controller="Account" asp-anti-forgery="true">
                 <div class="modal-body">
                     <div class="input-group mt-5">
                         <div class="validation text-danger" asp-validation-summary="ModelOnly"></div>
@@ -60,15 +58,22 @@
                     <div class="input-group mt-2">
                         <label for="phone"><span class="text-danger" ></span></label>
                         <div class="input-group">
-                            <input asp-for="PhoneNumber"  type="text" class="form-control" placeholder="Phone number" id="phone" value="@Model.PhoneNumber" required="required">
+                            <input asp-for="PhoneNumber" oninput="validatePhoneNumber()"  type="text" class="form-control" placeholder="Phone number" id="phone"  value="@Model.PhoneNumber" required="required">
                         </div>
                     </div>
-                    <div class="mt-2">
-                        <label for="file">Выберите фото профиля</label>
-                        <input id="file" type="file" name="uploadedFile" class="form-control">
-                    </div>
                     <div class="input-group mt-2">
-                        <input type="password" onChange="onChange()" class="form-control" name="password" placeholder="Password" id="pass" aria-describedby="button-addon1">
+                        <input type="password" class="form-control" name="currentPassword" placeholder="Current Password" id="pass3" aria-describedby="button-addon3">
+                        <button type="button" id="button-addon3" class="btn password-toggle-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 16.01C14.2091 16.01 16 14.2191 16 12.01C16 9.80087 14.2091 8.01001 12 8.01001C9.79086 8.01001 8 9.80087 8 12.01C8 14.2191 9.79086 16.01 12 16.01Z" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M2 11.98C8.09 1.31996 15.91 1.32996 22 11.98" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M22 12.01C15.91 22.67 8.09 22.66 2 12.01" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="input-group mt-2">
+                        <input type="password" oninput="validatePassword()" onchange="onChange()" class="form-control" name="password" placeholder="Password" id="pass" aria-describedby="button-addon1">
                         <button type="button" id="button-addon1" class="btn password-toggle-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 24 24" fill="none">
                                 <path d="M12 16.01C14.2091 16.01 16 14.2191 16 12.01C16 9.80087 14.2091 8.01001 12 8.01001C9.79086 8.01001 8 9.80087 8 12.01C8 14.2191 9.79086 16.01 12 16.01Z" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -154,14 +159,59 @@
                 confirm.setCustomValidity('Passwords do not match');
             }
         }
+        function validatePhoneNumber() {
+                    let phoneInput = document.querySelector('input[id=phone]');
+                    let phoneError = document.getElementById('phoneError');
+                    let phonePattern = /^0\d{9}$/;
+        
+                    if (phonePattern.test(phoneInput.value)) {
+                        phoneInput.setCustomValidity('');
+                        phoneError.textContent = '';
+                    } else {
+                        phoneInput.setCustomValidity('Заполните в формате x-цифра(0-9): 0 xxx xx xx xx');
+                        phoneError.textContent = 'Заполните в формате x-цифра(0-9): 0 xxx xx xx xx';
+                    }
+                }
+        
+        function validatePassword() {
+                    let password = document.querySelector('input[name=password]');
+                    let passwordError = document.getElementById('passwordError');
+                    let passwordValue = password.value;
+        
+                    let lengthCheck = passwordValue.length >= 6;
+                    let nonAlphanumericCheck = /[^\w]/.test(passwordValue);
+                    let digitCheck = /\d/.test(passwordValue);
+                    let uppercaseCheck = /[A-Z]/.test(passwordValue);
+                    let lowercaseCheck = /[a-z]/.test(passwordValue);
+        
+                    let errorMessage = '';
+                    if (!lengthCheck) {
+                        errorMessage += 'Passwords must be at least 6 characters.\n';
+                    }
+                    if (!nonAlphanumericCheck) {
+                        errorMessage += 'Passwords must have at least one non-alphanumeric character.\n';
+                    }
+                    if (!digitCheck) {
+                        errorMessage += 'Passwords must have at least one digit (\'0\'-\'9\').\n';
+                    }
+                    if (!uppercaseCheck) {
+                        errorMessage += 'Passwords must have at least one uppercase (\'A\'-\'Z\').\n';
+                    }
+                    if (!lowercaseCheck) {
+                        errorMessage += 'Passwords must have at least one lowercase (\'a\'-\'z\').\n';
+                    }
+        
+                    if (errorMessage === '') {
+                        password.setCustomValidity('');
+                        passwordError.textContent = '';
+                    } else {
+                        password.setCustomValidity(errorMessage);
+                        passwordError.innerHTML = errorMessage.replace(/\n/g, '<br>');
+                    }
+                }
     
         $(document).ready(function() {
-            let role;
-            if ('@ViewBag.RoleIdent' === true){
-                role = 'user';
-            }else{
-                role = 'manager';
-            }
+           
             $('#deleteUser').click(function(e) {
                 e.preventDefault();
                 let userId = @Model.Id;
@@ -206,7 +256,7 @@
                             $('#profileEmail').text(response.email);
                             $('#profileUserName').text(response.userName);
                             $('#profilePhone').text(response.phoneNumber);
-                            $('#profileAvatar').attr('src', response.avatar);
+                            alert('Данные успешно обновлены!');
                         } else {
                             alert('Ошибка: при редактировании профиля');
                         }

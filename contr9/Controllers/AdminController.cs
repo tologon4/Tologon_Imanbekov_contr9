@@ -9,13 +9,13 @@ namespace contr9.Controllers;
 [Authorize]
 public class AdminController : Controller
 {
-    private Contr9Db _db;
+    private WalletDb _db;
     private UserManager<User> _userManager;
     private SignInManager<User> _signInManager;
     private IWebHostEnvironment _environment;
 
 
-    public AdminController(Contr9Db db, UserManager<User> userManager, SignInManager<User> signInManager, IWebHostEnvironment environment)
+    public AdminController(WalletDb db, UserManager<User> userManager, SignInManager<User> signInManager, IWebHostEnvironment environment)
     {
         _db = db;
         _userManager = userManager;

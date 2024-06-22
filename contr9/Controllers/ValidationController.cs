@@ -7,10 +7,10 @@ namespace contr9.Controllers;
 
 public class ValidationController : Controller
 {
-    private Contr9Db _db;
+    private WalletDb _db;
     private UserManager<User> _userManager;
 
-    public ValidationController(Contr9Db context, UserManager<User> userManager)
+    public ValidationController(WalletDb context, UserManager<User> userManager)
     {
         _db = context;
         _userManager = userManager;

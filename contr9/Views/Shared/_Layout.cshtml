@@ -21,18 +21,21 @@
             </button>
             <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                 <ul class="navbar-nav flex-grow-1">
+                    <li class="nav-item ms-auto">
+                        <a class="btn btn-light border-1 border-primary rounded-3 text-primary" asp-action="Create" asp-controller="Transaction">Пополнение счета</a>
+                    </li>
                     @if (User.Identity.IsAuthenticated)
-                    { 
-                        @if (User.IsInRole("admin")) 
+                    {
+                        @if (User.IsInRole("admin"))
                         {
                             <li class="nav-item ms-auto">
                                 <a class="btn btn-light border-1 border-primary rounded-3 text-primary" asp-action="Register" asp-controller="Account">Создать пользователя</a>
                             </li>
                         }
+
                         <li class="nav-item ms-auto">
                             <form method="post" asp-controller="Account" asp-action="LogOut"><input type="submit" value="Выход" class="btn btn-light border-1 border-primary rounded-3 order-1 text-primary"/></form>
                         </li>
-                        
                         <li class="nav-item me-3">
                             <a class=" ms-4" asp-action="Profile" asp-controller="Account" asp-route-id=""><i class="bi bi-person-circle fs-3"></i></a>
                         </li>
@@ -43,7 +46,7 @@
                             <a class="btn btn-light border-1 border-primary rounded-3 order-1 text-primary" asp-action="Login" asp-controller="Account"> Войти </a>
                         </li>
                     }
-                    
+
                 </ul>
             </div>
         </div>

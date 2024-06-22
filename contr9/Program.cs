@@ -9,9 +9,9 @@ builder.Services.AddControllersWithViews();
 
 string connection = builder.Configuration.GetConnectionString("DefaultConnection");
 
-builder.Services.AddDbContext<Contr9Db>(options => options.UseNpgsql(connection))
+builder.Services.AddDbContext<WalletDb>(options => options.UseNpgsql(connection))
     .AddIdentity<User, IdentityRole<int>>()
-    .AddEntityFrameworkStores<Contr9Db>();
+    .AddEntityFrameworkStores<WalletDb>();
 var app = builder.Build();
 using var scope = app.Services.CreateScope();
 var services = scope.ServiceProvider;
@@ -46,6 +46,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Account}/{action=Login}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
