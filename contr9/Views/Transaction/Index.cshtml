@@ -1,8 +1,73 @@
-@model User
+@model List<Transaction>
 
 @{
     ViewBag.Title = "title";
     Layout = "_Layout";
 }
+<div class="mt-5">
+    <form method="get" asp-action="Index">
+        <div class="row">
+            <div class="form-group col-6">
+                <label for="fromDate">Дата с:</label>
+                <input type="date" name="fromDate" class="form-control"/>
+            </div>
+            <div class="form-group col-6">
+                <label for="toDate">Дата по:</label>
+                <input type="date" name="toDate" class="form-control"/>
+            </div>
+            
+        </div>
+        <button type="submit" class="btn btn-primary mt-4 mx-auto">Фильтровать</button>
+    </form>
+</div>
 
-<h2>title</h2>
+@if (@Model.Count() == 0)
+    {
+        <p>Пока что, транзакций еще нет!</p>
+    }
+    else
+    {
+        <table class="table table-light table-striped mt-5">
+            <thead>
+            <tr>
+                <th>Номер</th>
+                <th>Счет отправителя</th>
+                <th>Email отправителя</th>
+                <th>Счет получателя</th>
+                <th>Email получателя</th>
+                <th>Сумма перевода</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var transaction in @Model)
+            {
+                <tr>
+                    <td>@transaction.Id</td>
+                    @if (transaction.SenderUser != null)
+                    {
+                        <td>@transaction.SenderUser.Account</td>
+                    }
+                    else
+                    {
+                        <td>Неизвестен</td>
+                    }
+                    @if (transaction.SenderUser != null)
+                                        {
+                                            <td>@transaction.SenderUser.Email</td>
+                                        }
+                                        else
+                                        {
+                                            <td>Неизвестен</td>
+                                        }
+                    
+                    <td>@transaction.RecipientUser.Account</td>
+                    <td>@transaction.RecipientUser.Email</td>
+                    <td>@transaction.TransactionAmount</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <div class="col-4 mx-auto text-center">
+            
+        </div>
+    }

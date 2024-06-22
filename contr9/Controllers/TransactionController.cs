@@ -1,4 +1,5 @@
 using contr9.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -18,6 +19,30 @@ public class TransactionController : Controller
         _userManager = userManager;
     }
 
+    
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> Index(DateTime? fromDate, DateTime? toDate)
+    {
+        User? user = await _userManager.GetUserAsync(User);
+        if (user == null)
+            return NotFound("");
+        
+
+        var transactions  = await _db.Transactions
+            .Where(t => t.SenderUserId == user.Id || t.RecipientUserId == user.Id)
+            .Include(t => t.SenderUser)  
+            .Include(t => t.RecipientUser)  
+            .ToListAsync();
+
+        if (fromDate.HasValue)
+            transactions = transactions.Where(t => t.SendTime >= fromDate.Value).ToList();
+        if (toDate.HasValue)
+            transactions = transactions.Where(t => t.SendTime <= toDate.Value).ToList();
+        
+        return View(transactions);
+    }
+    
 
     [HttpGet]
     public async Task<IActionResult> Create()
@@ -70,7 +95,7 @@ public class TransactionController : Controller
 
             transactionSender.SenderUserId = fromUser.Id;
             transactionSender.SendTime = DateTime.UtcNow.AddHours(6);
-            transactionSender.TransactionAmount =-model.Amount;
+            transactionSender.TransactionAmount = -model.Amount;
             transactionSender.RecipientUserId = toUser.Id;
             
             _db.Transactions.Add(transactionSender);
@@ -85,8 +110,5 @@ public class TransactionController : Controller
     }
     
 
-    public IActionResult Index()
-    {
-        return View();
-    }
+    
 }
