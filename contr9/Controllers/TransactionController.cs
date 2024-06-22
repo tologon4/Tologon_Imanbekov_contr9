@@ -45,6 +45,65 @@ public class TransactionController : Controller
     
 
     [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> ServicePay()
+    {
+        ViewBag.Services = await _db.Services.ToListAsync();
+        return View();
+    }
+
+    [HttpPost]
+    [Authorize] 
+    [ValidateAntiForgeryToken] 
+    public async Task<IActionResult> ServicePay(ServicePayViewModel model)
+    {
+        Transaction transaction = new Transaction();
+        if (ModelState.IsValid)
+        {
+             var currenUser = await _userManager.GetUserAsync(User);
+             if (currenUser == null)
+                 return NotFound("Пользователь не найден");
+             
+             if (currenUser.Balance < model.Amount)
+             {
+                 ModelState.AddModelError("Amount", "Недостаточно средств для оплаты");
+                 ViewBag.Result = "Недостаточно средств для оплаты";
+                 ViewBag.Services = await _db.Services.ToListAsync();
+                 return View(model);
+             }
+
+             var serviceUser = await _db.ServiceUsers.Include(u => u.Service)
+                 .FirstOrDefaultAsync(u => u.ServiceId == model.ServiceId && u.UserAccount == model.Account);
+
+             if (serviceUser == null)
+             {
+                 ModelState.AddModelError("Account", "Личный счет у организации не найден");
+                 ViewBag.Result = "Личный счет у организации не найден";
+                 ViewBag.Services = await _db.Services.ToListAsync();
+                 return View(model);
+             }
+
+             currenUser.Balance -= model.Amount;
+             serviceUser.Balance += model.Amount;
+             transaction.SenderUserId = currenUser.Id;
+             transaction.RecipientUserId = null;
+             transaction.SendTime = DateTime.UtcNow.AddHours(6);
+             transaction.TransactionAmount = - model.Amount;
+
+             _db.Transactions.Add(transaction);
+             _db.Users.Update(currenUser);
+             _db.ServiceUsers.Update(serviceUser);
+
+             await _db.SaveChangesAsync();
+             ViewBag.Result = "Оплата успешно выполнена";
+             ViewBag.Services = await _db.Services.ToListAsync();
+             return View();
+        }
+        ViewBag.Services = await _db.Services.ToListAsync();
+        return View(model);
+    }
+    
+    [HttpGet]
     public async Task<IActionResult> Create()
     {
         return View();
