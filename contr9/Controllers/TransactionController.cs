@@ -60,7 +60,7 @@ public class TransactionController : Controller
         Transaction transaction = new Transaction();
         if (ModelState.IsValid)
         {
-             var currenUser = await _userManager.GetUserAsync(User);
+             var currenUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == int.Parse(_userManager.GetUserId(User)));
              if (currenUser == null)
                  return NotFound("Пользователь не найден");
              
@@ -72,27 +72,31 @@ public class TransactionController : Controller
                  return View(model);
              }
 
-             var serviceUser = await _db.ServiceUsers.Include(u => u.Service)
+             ServiceUser? serviceUser = await _db.ServiceUsers.Include(u => u.Service)
                  .FirstOrDefaultAsync(u => u.ServiceId == model.ServiceId && u.UserAccount == model.Account);
-
              if (serviceUser == null)
              {
-                 ModelState.AddModelError("Account", "Личный счет у организации не найден");
-                 ViewBag.Result = "Личный счет у организации не найден";
-                 ViewBag.Services = await _db.Services.ToListAsync();
-                 return View(model);
+                 serviceUser = new ServiceUser()
+                 {
+                     UserAccount = currenUser.Account,
+                     ServiceId = model.ServiceId,
+                     Balance = model.Amount
+                 };
+                 _db.ServiceUsers.Add(serviceUser);
              }
-
+             else
+             {
+                 serviceUser.Balance += model.Amount;
+                 _db.ServiceUsers.Update(serviceUser);
+             }
+            
              currenUser.Balance -= model.Amount;
-             serviceUser.Balance += model.Amount;
              transaction.SenderUserId = currenUser.Id;
              transaction.RecipientUserId = null;
              transaction.SendTime = DateTime.UtcNow.AddHours(6);
              transaction.TransactionAmount = - model.Amount;
-
              _db.Transactions.Add(transaction);
              _db.Users.Update(currenUser);
-             _db.ServiceUsers.Update(serviceUser);
 
              await _db.SaveChangesAsync();
              ViewBag.Result = "Оплата успешно выполнена";
