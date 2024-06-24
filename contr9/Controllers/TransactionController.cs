@@ -74,7 +74,7 @@ public class TransactionController : Controller
 
              ServiceUser? serviceUser = await _db.ServiceUsers.Include(u => u.Service)
                  .FirstOrDefaultAsync(u => u.ServiceId == model.ServiceId && u.UserAccount == model.Account);
-             if (serviceUser == null)
+             if (serviceUser == null && model.Account.Equals(currenUser.Account))
              {
                  serviceUser = new ServiceUser()
                  {
@@ -83,6 +83,12 @@ public class TransactionController : Controller
                      Balance = model.Amount
                  };
                  _db.ServiceUsers.Add(serviceUser);
+             }
+             else if (serviceUser == null)
+             {
+                 ViewBag.Result = "Счет не найден, чтобы создать новый счет, введите свой номер счета!";
+                 ViewBag.Services = await _db.Services.ToListAsync();
+                 return View(model);
              }
              else
              {
