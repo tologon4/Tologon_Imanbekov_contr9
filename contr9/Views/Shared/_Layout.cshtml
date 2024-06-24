@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Identity
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
@@ -11,6 +12,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
 <body>
+@inject UserManager<User> userManager;
+@inject SignInManager<User> signInManager;
 <header>
     <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
         <div class="container-fluid">
@@ -31,20 +34,25 @@
                                 <a class="btn btn-light border-1 border-primary rounded-3 text-primary" asp-action="Register" asp-controller="Account">Создать пользователя</a>
                             </li>
                         }
+
                         <li class="nav-item ms-auto">
                             <a class="btn btn-light border-1 border-primary rounded-3 text-primary" asp-action="ServicePay" asp-controller="Transaction">Оплата услуг</a>
                         </li>
-                        
+
                         <li class="nav-item me-3">
-                            <a class=" ms-4" asp-action="Index" asp-controller="Transaction" asp-route-id="">История транзакций</a>
+                            <a class=" ms-4 btn btn-light border-1 border-success rounded-3 text-success" asp-action="Index" asp-controller="Transaction" asp-route-id="">История транзакций</a>
                         </li>
-                        
-                        <li class="nav-item ms-auto">
-                            <form method="post" asp-controller="Account" asp-action="LogOut"><input type="submit" value="Выход" class="btn btn-light border-1 border-primary rounded-3 order-1 text-primary"/></form>
+                        <li class="nav-item mx-3">
+                            <span class=" btn btn-light border-1 border-success rounded-3 text-success" >На счету:&nbsp; @CurrentUserGet().Balance</span>
                         </li>
                         <li class="nav-item me-3">
                             <a class=" ms-4" asp-action="Profile" asp-controller="Account" asp-route-id=""><i class="bi bi-person-circle fs-3"></i></a>
                         </li>
+                        <li class="nav-item ms-auto">
+                            <form method="post" asp-controller="Account" asp-action="LogOut"><input type="submit" value="Выход" class="btn btn-light border-1 border-primary rounded-3 order-1 text-primary"/></form>
+                        </li>
+                        
+                        
                     }
                     else
                     {
@@ -73,4 +81,15 @@
 <script src="~/js/site.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
+@functions
+{
+    public User CurrentUserGet()
+    {
+        var user= userManager.FindByNameAsync(User.Identity.Name);
+        User result = new User();
+        if(user!=null && signInManager.IsSignedIn(User))
+            result = user.Result;
+        return result;
+    }
+}
 </html>

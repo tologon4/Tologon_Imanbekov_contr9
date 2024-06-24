@@ -36,6 +36,7 @@
                 <th>Счет получателя</th>
                 <th>Email получателя</th>
                 <th>Сумма перевода</th>
+                <th>Дата транзакции</th>
             </tr>
             </thead>
             <tbody>
@@ -77,6 +78,7 @@
 
                     }
                     <td>@transaction.TransactionAmount</td>
+                    <td>@transaction.SendTime.ToString()</td>
                 </tr>
             }
             </tbody>
